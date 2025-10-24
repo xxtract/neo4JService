@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  neo4j:
+    # Gebruik de officiële Neo4j image, versie 5 is een stabiele keuze
+    image: neo4j:5
+    
+    # Geef de container een herkenbare naam
+    container_name: neo4j-dev
+    
+    # Zorg ervoor dat de container altijd herstart als hij crasht
+    restart: always
+    
+    # Publiceer de poorten naar je lokale machine ('host:container')
+    ports:
+      - "7474:7474"  # Poort voor de Neo4j Browser in je webbrowser
+      - "7687:7687"  # Poort voor de Bolt driver (voor n8n connectie)
+      
+    # Koppel lokale mappen aan de container voor permanente data-opslag
+    volumes:
+      - ./data:/data
+      - ./logs:/logs
+      - ./plugins:/plugins
+      
+    # Stel de authenticatie in. VERANDER HET WACHTWOORD!
+    environment:
+      - NEO4J_AUTH=neo4j/8J@6M2*zDmYnsgNR
+      - N8N_EXTENSIONS_INSTALL=n8n-nodes-neo4j
+      
