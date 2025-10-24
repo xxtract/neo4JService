@@ -2,28 +2,63 @@ version: '3.8'
 
 services:
   neo4j:
-    # Gebruik de officiële Neo4j image, versie 5 is een stabiele keuze
     image: neo4j:5
-    
-    # Geef de container een herkenbare naam
-    container_name: neo4j-dev
-    
-    # Zorg ervoor dat de container altijd herstart als hij crasht
+
+    # Restart policy for Coolify
     restart: always
-    
-    # Publiceer de poorten naar je lokale machine ('host:container')
+
+    # Expose ports - adjust based on your Coolify networking setup
     ports:
-      - "7474:7474"  # Poort voor de Neo4j Browser in je webbrowser
-      - "7687:7687"  # Poort voor de Bolt driver (voor n8n connectie)
-      
-    # Koppel lokale mappen aan de container voor permanente data-opslag
-    volumes:
-      - ./data:/data
-      - ./logs:/logs
-      - ./plugins:/plugins
-      
-    # Stel de authenticatie in. VERANDER HET WACHTWOORD!
+      - "${NEO4J_BROWSER_PORT:-7474}:7474"  # Neo4j Browser
+      - "${NEO4J_BOLT_PORT:-7687}:7687"      # Bolt driver (for applications/n8n)
+
+    # Environment variables - use .env file for secrets
     environment:
-      - NEO4J_AUTH=neo4j/8J@6M2*zDmYnsgNR
-      - N8N_EXTENSIONS_INSTALL=n8n-nodes-neo4j
-      
+      # Authentication - change default credentials in .env!
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      - NEO4J_server_memory_pagecache_size=${NEO4J_PAGECACHE_SIZE:-512M}
+      - NEO4J_server_memory_heap_initial_size=${NEO4J_HEAP_SIZE:-512M}
+      - NEO4J_server_memory_heap_max_size=${NEO4J_HEAP_SIZE:-512M}
+
+      # Logging levels
+      - NEO4J_dbms_logs_debug_level=${NEO4J_LOG_LEVEL:-INFO}
+
+      # Security settings for production
+      - NEO4J_server_http_enabled=${NEO4J_HTTP_ENABLED:-true}
+      - NEO4J_server_bolt_enabled=${NEO4J_BOLT_ENABLED:-true}
+
+    # Persistent volumes for data
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_plugins:/plugins
+      - neo4j_import:/import
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7474/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+    # Resource limits (optional, adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '${DOCKER_CPUS:-2}'
+          memory: ${DOCKER_MEMORY:-1G}
+        reservations:
+          cpus: '${DOCKER_CPUS_RESERVE:-1}'
+          memory: ${DOCKER_MEMORY_RESERVE:-512M}
+
+# Named volumes for persistence in Coolify
+volumes:
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_plugins:
+    driver: local
+  neo4j_import:
+    driver: local
