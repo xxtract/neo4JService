@@ -1,6 +1,9 @@
 # Database data files (generated at runtime)
-data/
-logs/
+# Keep directories but ignore contents
+data/*
+logs/*
+!data/.gitkeep
+!logs/.gitkeep
 
 # Node modules (if applicable)
 node_modules/
